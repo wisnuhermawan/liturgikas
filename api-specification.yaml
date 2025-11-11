@@ -1,0 +1,1524 @@
+openapi: 3.0.3
+info:
+  title: Catholic Information Platform API
+  description: |
+    REST API untuk mengakses konten Katolik termasuk Alkitab, Katekismus Gereja Katolik, artikel, dokumen Gereja, santo-santa, dan kalender liturgi.
+    
+    ## Otentikasi
+    API ini menggunakan **API Key** untuk otentikasi. Sertakan API key Anda di header `X-API-Key`.
+    
+    Untuk mendapatkan API key:
+    1. Register/login ke platform
+    2. Kunjungi halaman API Keys di dashboard
+    3. Generate API key baru
+    
+    ## Rate Limiting
+    - Default: 1000 requests/hour per API key
+    - Custom limits tersedia untuk enterprise
+    
+    ## Response Format
+    Semua response menggunakan format JSON:
+    ```json
+    {
+      "success": true,
+      "data": {...},
+      "meta": {...},
+      "error": null
+    }
+    ```
+    
+    ## Endpoints
+    Base URL Production: `https://api.catholic-platform.or.id/v1`
+    Base URL Development: `http://localhost:3000/api/v1`
+    
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: api@catholic-platform.or.id
+    url: https://catholic-platform.or.id/api/docs
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.catholic-platform.or.id/v1
+    description: Production server
+  - url: http://localhost:3000/api/v1
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: Autentikasi dan manajemen user
+  - name: Bible
+    description: Alkitab lengkap (73 kitab)
+  - name: Catechism
+    description: Katekismus Gereja Katolik (2,865 paragraf)
+  - name: Contents
+    description: Artikel, dokumen, doa, homili, Q&A
+  - name: Saints
+    description: Database santo-santa
+  - name: Liturgy
+    description: Kalender liturgi
+  - name: Search
+    description: Global search
+  - name: Admin
+    description: Admin endpoints (requires authentication)
+
+# ============================================================================
+# SECURITY SCHEMES
+# ============================================================================
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key untuk autentikasi
+    
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token untuk admin authentication
+
+# ============================================================================
+# REUSABLE SCHEMAS
+# ============================================================================
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Invalid input data"
+            details:
+              type: array
+              items:
+                type: object
+        data:
+          type: null
+      required:
+        - success
+        - error
+    
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 5
+    
+    BibleBook:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        bookNumber:
+          type: integer
+          example: 1
+        nameIndonesian:
+          type: string
+          example: "Kejadian"
+        nameEnglish:
+          type: string
+          example: "Genesis"
+        abbreviation:
+          type: string
+          example: "Kej"
+        testament:
+          type: string
+          enum: [old_testament, new_testament, deuterocanonical]
+          example: "old_testament"
+        category:
+          type: string
+          example: "Pentateuch"
+        totalChapters:
+          type: integer
+          example: 50
+    
+    BibleVerse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        reference:
+          type: string
+          example: "Kej 1:1"
+        bookName:
+          type: string
+          example: "Kejadian"
+        chapterNumber:
+          type: integer
+          example: 1
+        verseNumber:
+          type: integer
+          example: 1
+        text:
+          type: string
+          example: "Pada mulanya Allah menciptakan langit dan bumi."
+        footnotes:
+          type: string
+          nullable: true
+        crossReferences:
+          type: array
+          items:
+            type: string
+          example: ["Yoh 1:1", "Ibr 11:3"]
+    
+    CatechismParagraph:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        paragraphNumber:
+          type: integer
+          example: 1
+        title:
+          type: string
+          nullable: true
+          example: "Kehidupan manusia - mengenal dan mengasihi Allah"
+        content:
+          type: string
+          example: "Allah, yang tak terbatas sempurna dan berbahagia dalam diri-Nya sendiri..."
+        bibleReferences:
+          type: array
+          items:
+            type: string
+          example: ["Kej 1:27", "Yoh 17:3"]
+        crossReferences:
+          type: array
+          items:
+            type: integer
+          example: [27, 356, 1701]
+        inBrief:
+          type: boolean
+          example: false
+        section:
+          type: string
+          example: "Bab Satu: Manusia Mampu Mengenal Allah"
+    
+    Article:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        title:
+          type: string
+          example: "Arti Ekaristi dalam Kehidupan Katolik"
+        slug:
+          type: string
+          example: "arti-ekaristi-dalam-kehidupan-katolik"
+        excerpt:
+          type: string
+          example: "Ekaristi adalah sumber dan puncak kehidupan Kristiani..."
+        body:
+          type: string
+          example: "# Pengantar\n\nEkaristi merupakan..."
+        featuredImage:
+          type: string
+          format: uri
+          nullable: true
+        author:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+              example: "Pastor Antonius"
+        category:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+              example: "Sakramen"
+            slug:
+              type: string
+              example: "sakramen"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["Ekaristi", "Sakramen", "Liturgi"]
+        status:
+          type: string
+          enum: [draft, published, archived]
+          example: "published"
+        viewCount:
+          type: integer
+          example: 150
+        publishedAt:
+          type: string
+          format: date-time
+          example: "2025-01-01T10:00:00Z"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    Saint:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Santo Fransiskus Xaverius"
+        title:
+          type: string
+          example: "Patron Misionaris"
+        feastDay:
+          type: object
+          properties:
+            month:
+              type: integer
+              example: 12
+            date:
+              type: integer
+              example: 3
+        feastRank:
+          type: string
+          enum: [solemnity, feast, memorial, optional_memorial]
+          example: "memorial"
+        liturgicalColor:
+          type: string
+          enum: [white, red, green, purple, rose, black]
+          example: "white"
+        birthYear:
+          type: integer
+          nullable: true
+          example: 1506
+        deathYear:
+          type: integer
+          nullable: true
+          example: 1552
+        biography:
+          type: string
+          example: "Santo Fransiskus Xaverius lahir di Spanyol..."
+        patronOf:
+          type: array
+          items:
+            type: string
+          example: ["Misionaris", "Pelaut", "India"]
+        symbols:
+          type: array
+          items:
+            type: string
+          example: ["Salib", "Kapal"]
+        imageUrl:
+          type: string
+          format: uri
+          nullable: true
+    
+    LiturgyDay:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        date:
+          type: string
+          format: date
+          example: "2025-12-25"
+        year:
+          type: integer
+          example: 2025
+        liturgicalYear:
+          type: string
+          enum: [A, B, C]
+          example: "B"
+        season:
+          type: string
+          enum: [advent, christmas, ordinary_time, lent, easter, pentecost]
+          example: "christmas"
+        weekNumber:
+          type: integer
+          nullable: true
+          example: null
+        rank:
+          type: string
+          enum: [solemnity, feast, memorial, optional_memorial, feria, sunday]
+          example: "solemnity"
+        liturgicalColor:
+          type: string
+          enum: [white, red, green, purple, rose, black]
+          example: "white"
+        celebrationName:
+          type: string
+          example: "Hari Natal"
+        saint:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            biography:
+              type: string
+        isSolemnity:
+          type: boolean
+          example: true
+        isHolyDayOfObligation:
+          type: boolean
+          example: true
+        readings:
+          type: object
+          properties:
+            firstReading:
+              type: string
+              example: "Yes 9:1-6"
+            psalm:
+              type: string
+              example: "Mzm 96:1-3,11-13"
+            secondReading:
+              type: string
+              example: "Tit 2:11-14"
+            gospel:
+              type: string
+              example: "Luk 2:1-14"
+        notes:
+          type: string
+          nullable: true
+
+# ============================================================================
+# API PATHS
+# ============================================================================
+paths:
+  # ==========================================================================
+  # AUTHENTICATION
+  # ==========================================================================
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register user baru
+      description: Membuat akun user baru (hanya untuk mendapatkan API key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "johndoe"
+                email:
+                  type: string
+                  format: email
+                  example: "john@example.com"
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: "SecurePass123!"
+                fullName:
+                  type: string
+                  example: "John Doe"
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      username:
+                        type: string
+                      email:
+                        type: string
+                      message:
+                        type: string
+                        example: "Registration successful. Please verify your email."
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Login untuk mendapatkan JWT token (admin/content manager)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "admin@catholic-platform.or.id"
+                password:
+                  type: string
+                  format: password
+                  example: "Admin123!"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIs..."
+                      refreshToken:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIs..."
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          username:
+                            type: string
+                          email:
+                            type: string
+                          role:
+                            type: string
+                            example: "admin"
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ==========================================================================
+  # BIBLE
+  # ==========================================================================
+  /bible/books:
+    get:
+      tags:
+        - Bible
+      summary: Get list of all Bible books
+      description: Mendapatkan daftar 73 kitab dalam Alkitab Katolik
+      parameters:
+        - name: testament
+          in: query
+          schema:
+            type: string
+            enum: [old_testament, new_testament, deuterocanonical]
+          description: Filter by testament
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category (Pentateuch, Historical, etc.)
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BibleBook'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 73
+      security:
+        - ApiKeyAuth: []
+
+  /bible/books/{bookId}/chapters/{chapterNumber}:
+    get:
+      tags:
+        - Bible
+      summary: Get Bible chapter
+      description: Mendapatkan semua ayat dalam satu chapter
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID kitab (1-73)
+          example: 43
+        - name: chapterNumber
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Nomor chapter
+          example: 3
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      book:
+                        $ref: '#/components/schemas/BibleBook'
+                      chapter:
+                        type: integer
+                        example: 3
+                      totalVerses:
+                        type: integer
+                        example: 36
+                      verses:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BibleVerse'
+        '404':
+          description: Chapter not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - ApiKeyAuth: []
+
+  /bible/verses/{reference}:
+    get:
+      tags:
+        - Bible
+      summary: Get specific verse(s) by reference
+      description: |
+        Mendapatkan ayat berdasarkan referensi. Mendukung format:
+        - Single verse: `Yoh 3:16`
+        - Range: `Yoh 3:16-18`
+        - Multiple: `Yoh 3:16;Rom 5:8`
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Bible reference
+          example: "Yoh 3:16"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BibleVerse'
+        '400':
+          description: Invalid reference format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - ApiKeyAuth: []
+
+  /bible/search:
+    get:
+      tags:
+        - Bible
+      summary: Search Bible verses
+      description: Full-text search dalam Alkitab
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+          example: "kasih Allah"
+        - name: testament
+          in: query
+          schema:
+            type: string
+            enum: [old_testament, new_testament, deuterocanonical]
+          description: Filter by testament
+        - name: bookId
+          in: query
+          schema:
+            type: integer
+          description: Filter by book ID
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Results per page
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BibleVerse'
+                  meta:
+                    $ref: '#/components/schemas/Pagination'
+      security:
+        - ApiKeyAuth: []
+
+  # ==========================================================================
+  # CATECHISM
+  # ==========================================================================
+  /catechism/structure:
+    get:
+      tags:
+        - Catechism
+      summary: Get Catechism hierarchical structure
+      description: Mendapatkan struktur lengkap KGK (Parts, Sections, Chapters, Articles)
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        level:
+                          type: integer
+                        title:
+                          type: string
+                        children:
+                          type: array
+                          items:
+                            type: object
+      security:
+        - ApiKeyAuth: []
+
+  /catechism/paragraphs/{number}:
+    get:
+      tags:
+        - Catechism
+      summary: Get specific paragraph(s)
+      description: |
+        Mendapatkan paragraf KGK. Mendukung:
+        - Single: `/catechism/paragraphs/1`
+        - Range: `/catechism/paragraphs/1-5`
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Paragraph number or range (1-2865)
+          example: "1"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    oneOf:
+                      - $ref: '#/components/schemas/CatechismParagraph'
+                      - type: array
+                        items:
+                          $ref: '#/components/schemas/CatechismParagraph'
+        '404':
+          description: Paragraph not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - ApiKeyAuth: []
+
+  /catechism/search:
+    get:
+      tags:
+        - Catechism
+      summary: Search Catechism content
+      description: Full-text search dalam KGK
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+          example: "Ekaristi"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatechismParagraph'
+                  meta:
+                    $ref: '#/components/schemas/Pagination'
+      security:
+        - ApiKeyAuth: []
+
+  # ==========================================================================
+  # CONTENTS (Articles, Documents, Prayers, etc.)
+  # ==========================================================================
+  /contents:
+    get:
+      tags:
+        - Contents
+      summary: Get all contents
+      description: Mendapatkan daftar konten (artikel, dokumen, doa, dll)
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [article, document, prayer, homily, qa, page]
+          description: Filter by content type
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category slug
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, published, archived]
+            default: published
+          description: Filter by status (admin only can see draft)
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, oldest, popular]
+            default: newest
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Article'
+                  meta:
+                    $ref: '#/components/schemas/Pagination'
+      security:
+        - ApiKeyAuth: []
+
+  /contents/{slug}:
+    get:
+      tags:
+        - Contents
+      summary: Get content by slug
+      description: Mendapatkan detail konten berdasarkan slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "arti-ekaristi-dalam-kehidupan-katolik"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Article'
+        '404':
+          description: Content not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - ApiKeyAuth: []
+
+  # ==========================================================================
+  # SAINTS
+  # ==========================================================================
+  /saints:
+    get:
+      tags:
+        - Saints
+      summary: Get all saints
+      description: Mendapatkan daftar santo-santa
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+          description: Filter by feast month
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by saint name
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Saint'
+                  meta:
+                    $ref: '#/components/schemas/Pagination'
+      security:
+        - ApiKeyAuth: []
+
+  /saints/today:
+    get:
+      tags:
+        - Saints
+      summary: Get today's saint(s)
+      description: Mendapatkan santo/santa yang dirayakan hari ini
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Saint'
+      security:
+        - ApiKeyAuth: []
+
+  /saints/date/{month}/{day}:
+    get:
+      tags:
+        - Saints
+      summary: Get saint(s) by date
+      description: Mendapatkan santo/santa pada tanggal tertentu
+      parameters:
+        - name: month
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+          example: 12
+        - name: day
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 31
+          example: 3
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Saint'
+        '404':
+          description: No saint found on this date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - ApiKeyAuth: []
+
+  # ==========================================================================
+  # LITURGICAL CALENDAR
+  # ==========================================================================
+  /liturgy/today:
+    get:
+      tags:
+        - Liturgy
+      summary: Get today's liturgy
+      description: Mendapatkan informasi liturgi hari ini
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/LiturgyDay'
+      security:
+        - ApiKeyAuth: []
+
+  /liturgy/date/{date}:
+    get:
+      tags:
+        - Liturgy
+      summary: Get liturgy by date
+      description: Mendapatkan informasi liturgi pada tanggal tertentu
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Date in YYYY-MM-DD format
+          example: "2025-12-25"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/LiturgyDay'
+        '404':
+          description: Liturgy data not found for this date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - ApiKeyAuth: []
+
+  /liturgy/month/{year}/{month}:
+    get:
+      tags:
+        - Liturgy
+      summary: Get liturgy calendar for a month
+      description: Mendapatkan kalender liturgi untuk satu bulan
+      parameters:
+        - name: year
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 2025
+        - name: month
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+          example: 12
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LiturgyDay'
+                  meta:
+                    type: object
+                    properties:
+                      year:
+                        type: integer
+                      month:
+                        type: integer
+                      totalDays:
+                        type: integer
+      security:
+        - ApiKeyAuth: []
+
+  # ==========================================================================
+  # GLOBAL SEARCH
+  # ==========================================================================
+  /search:
+    get:
+      tags:
+        - Search
+      summary: Global search across all content
+      description: |
+        Search di semua konten: Bible, Catechism, Articles, Documents, Saints, dll.
+        
+        Results dikelompokkan by type dengan relevance ranking.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+          example: "Ekaristi"
+        - name: types
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [bible, catechism, article, document, prayer, homily, qa, saint]
+          description: Filter by content types (comma-separated)
+          example: "bible,catechism,article"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                              example: "bible"
+                            title:
+                              type: string
+                              example: "Yoh 3:16"
+                            excerpt:
+                              type: string
+                              example: "Karena begitu besar kasih Allah akan dunia ini..."
+                            url:
+                              type: string
+                              example: "/bible/Yoh/3#16"
+                            score:
+                              type: number
+                              example: 0.95
+                      summary:
+                        type: object
+                        properties:
+                          bible:
+                            type: integer
+                            example: 15
+                          catechism:
+                            type: integer
+                            example: 8
+                          article:
+                            type: integer
+                            example: 5
+                  meta:
+                    $ref: '#/components/schemas/Pagination'
+      security:
+        - ApiKeyAuth: []
+
+  # ==========================================================================
+  # ADMIN ENDPOINTS (Requires JWT Authentication)
+  # ==========================================================================
+  /admin/contents:
+    post:
+      tags:
+        - Admin
+      summary: Create new content
+      description: Membuat konten baru (article, document, prayer, dll)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - contentType
+                - title
+                - body
+              properties:
+                contentType:
+                  type: string
+                  enum: [article, document, prayer, homily, qa, page]
+                title:
+                  type: string
+                  example: "Arti Ekaristi"
+                slug:
+                  type: string
+                  example: "arti-ekaristi"
+                excerpt:
+                  type: string
+                body:
+                  type: string
+                categoryId:
+                  type: integer
+                tags:
+                  type: array
+                  items:
+                    type: string
+                status:
+                  type: string
+                  enum: [draft, published, archived]
+                  default: draft
+                featuredImage:
+                  type: string
+                metaTitle:
+                  type: string
+                metaDescription:
+                  type: string
+      responses:
+        '201':
+          description: Content created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Article'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (insufficient permissions)
+
+  /admin/contents/{id}:
+    put:
+      tags:
+        - Admin
+      summary: Update content
+      description: Update konten yang sudah ada
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                slug:
+                  type: string
+                excerpt:
+                  type: string
+                body:
+                  type: string
+                categoryId:
+                  type: integer
+                tags:
+                  type: array
+                  items:
+                    type: string
+                status:
+                  type: string
+                  enum: [draft, published, archived]
+                featuredImage:
+                  type: string
+      responses:
+        '200':
+          description: Content updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Article'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Content not found
+
+    delete:
+      tags:
+        - Admin
+      summary: Delete content
+      description: Menghapus konten
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Content deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Content deleted successfully"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Content not found
+
+  /admin/analytics/dashboard:
+    get:
+      tags:
+        - Admin
+      summary: Get dashboard analytics
+      description: Mendapatkan statistik dashboard admin
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      totalContents:
+                        type: integer
+                        example: 150
+                      totalUsers:
+                        type: integer
+                        example: 25
+                      totalApiKeys:
+                        type: integer
+                        example: 12
+                      apiRequestsToday:
+                        type: integer
+                        example: 5420
+                      topSearches:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            query:
+                              type: string
+                            count:
+                              type: integer
+                      recentActivities:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            action:
+                              type: string
+                            user:
+                              type: string
+                            timestamp:
+                              type: string
+                              format: date-time
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (admin only)
