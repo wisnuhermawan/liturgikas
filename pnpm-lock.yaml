@@ -105,6 +105,9 @@ importers:
       ioredis:
         specifier: ^5.4.1
         version: 5.8.2
+      jose:
+        specifier: ^6.1.1
+        version: 6.1.1
       oslo:
         specifier: ^1.2.1
         version: 1.2.1
@@ -1563,6 +1566,9 @@ packages:
   ioredis@5.8.2:
     resolution: {integrity: sha512-C6uC+kleiIMmjViJINWk80sOQw5lEzse1ZmvD+S/s8p8CWapftSaC+kocGTx6xrbrJ4WmYQGC08ffHLr6ToR6Q==}
     engines: {node: '>=12.22.0'}
+
+  jose@6.1.1:
+    resolution: {integrity: sha512-GWSqjfOPf4cWOkBzw5THBjtGPhXKqYnfRBzh4Ni+ArTrQQ9unvmsA3oFLqaYKoKe5sjWmGu5wVKg9Ft1i+LQfg==}
 
   json2mq@0.2.0:
     resolution: {integrity: sha512-SzoRg7ux5DWTII9J2qkrZrqV1gt+rTaoufMxEzXbS26Uid0NwaJd123HcoB80TgubEppxxIGdNxCx50fEoEWQA==}
@@ -3133,6 +3139,8 @@ snapshots:
       standard-as-callback: 2.1.0
     transitivePeerDependencies:
       - supports-color
+
+  jose@6.1.1: {}
 
   json2mq@0.2.0:
     dependencies:

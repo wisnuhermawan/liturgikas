@@ -6,6 +6,7 @@ import { logger } from 'hono/logger';
 import { prettyJSON } from 'hono/pretty-json';
 import { secureHeaders } from 'hono/secure-headers';
 import bibleRoutes from './routes/bible';
+import authRoutes from './routes/auth';
 
 const app = new Hono();
 
@@ -40,6 +41,7 @@ app.get('/', (c) => {
     documentation: '/api/docs',
     endpoints: {
       health: '/health',
+      auth: '/api/auth',
       bible: '/api/bible',
       catechism: '/api/catechism',
       saints: '/api/saints',
@@ -51,6 +53,7 @@ app.get('/', (c) => {
 });
 
 // Mount API routes
+app.route('/api/auth', authRoutes);
 app.route('/api/bible', bibleRoutes);
 
 // 404 handler
