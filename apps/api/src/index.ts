@@ -5,6 +5,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { prettyJSON } from 'hono/pretty-json';
 import { secureHeaders } from 'hono/secure-headers';
+import bibleRoutes from './routes/bible';
 
 const app = new Hono();
 
@@ -48,6 +49,9 @@ app.get('/', (c) => {
     },
   });
 });
+
+// Mount API routes
+app.route('/api/bible', bibleRoutes);
 
 // 404 handler
 app.notFound((c) => {

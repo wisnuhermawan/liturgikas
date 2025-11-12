@@ -70,22 +70,66 @@ createdb catholic_platform
 # Copy environment variables
 cp .env.example .env
 
-# Edit .env and update DATABASE_URL
+# Edit .env and update DATABASE_URL and API_PORT
+# Example:
+# DATABASE_URL="postgresql://postgres:password@localhost:5432/catholic_platform"
+# API_PORT=4000
 ```
 
-### 3. Run Development
+### 3. Run Migrations
+
+```bash
+# Generate and apply database migrations
+cd apps/api
+pnpm db:push
+```
+
+### 4. Seed Initial Data
+
+```bash
+# Seed admin user (email: admin@catholic-platform.com, password: admin123)
+pnpm seed:admin
+
+# Seed content categories
+pnpm seed:categories
+
+# Seed system settings
+pnpm seed:settings
+
+# Seed Bible books metadata (73 books)
+pnpm seed:bible-books
+
+# Or seed all at once
+pnpm seed
+```
+
+### 5. Import Bible Data (Optional)
+
+Import complete Bible text from imankatolik.or.id:
+
+```bash
+# This takes 45-60 minutes due to respectful rate limiting
+pnpm import:bible
+```
+
+Or test with a single book first:
+```bash
+npx tsx scripts/import/test-import-chapter.ts
+```
+
+### 6. Run Development
 
 ```bash
 # Start all apps (API + Admin + Web)
 pnpm dev
 
 # Or start individually
-pnpm dev --filter=api      # http://localhost:3000
-pnpm dev --filter=admin    # http://localhost:3002
-pnpm dev --filter=web      # http://localhost:3001
+pnpm dev --filter=api      # http://localhost:4000
+pnpm dev --filter=admin    # http://localhost:3001
+pnpm dev --filter=web      # http://localhost:3000
 ```
 
-### 4. Build for Production
+### 7. Build for Production
 
 ```bash
 # Build all apps
@@ -94,6 +138,48 @@ pnpm build
 # Start production server
 pnpm start
 ```
+
+## 📦 Seed Scripts & Data Import
+
+### Available Seed Scripts
+
+Located in `scripts/seeds/`:
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| Admin User | `pnpm seed:admin` | Creates default admin account |
+| Categories | `pnpm seed:categories` | Creates 10 content categories |
+| Settings | `pnpm seed:settings` | Creates system settings |
+| Bible Books | `pnpm seed:bible-books` | Creates metadata for 73 Bible books |
+| All Seeds | `pnpm seed` | Runs all seed scripts in order |
+
+### Bible Data Importer
+
+The Bible importer (`scripts/import/bible-importer.ts`) fetches Indonesian Catholic Bible text from imankatolik.or.id:
+
+**Features:**
+- Imports all 73 books (Old Testament + Deuterocanonical + New Testament)
+- Total: 1,328 chapters, ~31,000 verses
+- Respectful rate limiting (2 seconds between requests)
+- Automatic HTML parsing and verse extraction
+- Progress tracking and error handling
+
+**Usage:**
+```bash
+# Full import (45-60 minutes)
+pnpm import:bible
+
+# Test with sample chapters
+npx tsx scripts/import/test-import-chapter.ts
+
+# Verify imported data
+npx tsx scripts/import/verify-import.ts
+```
+
+**Bible Structure:**
+- Old Testament: 39 books (Kejadian to Maleakhi)
+- Deuterocanonical: 7 books (Tobit, Yudit, Kebijaksanaan, etc.)
+- New Testament: 27 books (Matius to Wahyu)
 
 ## 📚 Documentation
 
