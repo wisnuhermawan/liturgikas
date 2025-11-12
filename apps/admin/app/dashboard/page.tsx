@@ -1,43 +1,27 @@
 'use client';
 
-import { Button, Card, Col, Row, Statistic, Typography } from 'antd';
+import { Card, Col, Row, Statistic, Typography } from 'antd';
 import {
   BookOutlined,
   FileTextOutlined,
   UserOutlined,
-  LogoutOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '@/lib/auth-context';
-import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminLayout from '@/components/AdminLayout';
 
 const { Title, Text } = Typography;
 
 function DashboardContent() {
-  const { user, logout } = useAuth();
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    await logout();
-    router.push('/login');
-  };
+  const { user } = useAuth();
 
   return (
-    <div style={{ padding: '24px', minHeight: '100vh', background: '#f0f2f5' }}>
+    <AdminLayout>
       <div style={{ marginBottom: '24px' }}>
-        <Row align="middle" justify="space-between">
-          <Col>
-            <Title level={2} style={{ margin: 0 }}>
-              Dashboard
-            </Title>
-            <Text type="secondary">Selamat datang, {user?.fullName || user?.username}!</Text>
-          </Col>
-          <Col>
-            <Button icon={<LogoutOutlined />} onClick={handleLogout}>
-              Logout
-            </Button>
-          </Col>
-        </Row>
+        <Title level={2} style={{ margin: 0 }}>
+          Dashboard
+        </Title>
+        <Text type="secondary">Selamat datang, {user?.fullName || user?.username}!</Text>
       </div>
 
       <Row gutter={[16, 16]}>
@@ -134,7 +118,7 @@ function DashboardContent() {
           </Col>
         </Row>
       </Card>
-    </div>
+    </AdminLayout>
   );
 }
 

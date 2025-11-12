@@ -7,6 +7,8 @@ import { prettyJSON } from 'hono/pretty-json';
 import { secureHeaders } from 'hono/secure-headers';
 import bibleRoutes from './routes/bible';
 import authRoutes from './routes/auth';
+import contentsRoutes from './routes/contents';
+import categoriesRoutes from './routes/categories';
 
 const app = new Hono();
 
@@ -55,6 +57,8 @@ app.get('/', (c) => {
 // Mount API routes
 app.route('/api/auth', authRoutes);
 app.route('/api/bible', bibleRoutes);
+app.route('/api/contents', contentsRoutes);
+app.route('/api/categories', categoriesRoutes);
 
 // 404 handler
 app.notFound((c) => {

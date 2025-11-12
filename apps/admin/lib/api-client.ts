@@ -73,3 +73,38 @@ export const bibleAPI = {
   search: (params: { q: string; book_id?: number; testament?: string; limit?: number }) =>
     apiClient.get('/api/bible/search', { params }),
 };
+
+export const contentsAPI = {
+  list: (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    contentType?: string;
+    categoryId?: number;
+    search?: string;
+  }) => apiClient.get('/api/contents', { params }),
+
+  get: (id: string) => apiClient.get(`/api/contents/${id}`),
+
+  create: (data: any) => apiClient.post('/api/contents', data),
+
+  update: (id: string, data: any) => apiClient.put(`/api/contents/${id}`, data),
+
+  delete: (id: string) => apiClient.delete(`/api/contents/${id}`),
+
+  publish: (id: string) => apiClient.patch(`/api/contents/${id}/publish`),
+
+  unpublish: (id: string) => apiClient.patch(`/api/contents/${id}/unpublish`),
+};
+
+export const categoriesAPI = {
+  list: (params?: { parent?: string }) => apiClient.get('/api/categories', { params }),
+
+  get: (id: number) => apiClient.get(`/api/categories/${id}`),
+
+  create: (data: any) => apiClient.post('/api/categories', data),
+
+  update: (id: number, data: any) => apiClient.put(`/api/categories/${id}`, data),
+
+  delete: (id: number) => apiClient.delete(`/api/categories/${id}`),
+};

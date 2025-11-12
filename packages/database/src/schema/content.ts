@@ -1,4 +1,5 @@
 import { boolean, integer, pgTable, serial, text, timestamp, uuid, varchar, index } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { contentStatusEnum, contentTypeEnum, documentTypeEnum } from './enums';
 import { users } from './users';
 
@@ -140,3 +141,35 @@ export const media = pgTable(
     uploadedByIdx: index('idx_media_uploaded_by').on(table.uploadedBy),
   })
 );
+
+// Relations
+export const categoriesRelations = relations(categories, ({ one, many }) => ({
+  parent: one(categories, {
+    fields: [categories.parentId],
+    references: [categories.id],
+  }),
+  children: many(categories),
+  contents: many(contents),
+}));
+
+export const contentsRelations = relations(contents, ({ one }) => ({
+  category: one(categories, {
+    fields: [contents.categoryId],
+    references: [categories.id],
+  }),
+  createdByUser: one(users, {
+    fields: [contents.createdBy],
+    references: [users.id],
+  }),
+  updatedByUser: one(users, {
+    fields: [contents.updatedBy],
+    references: [users.id],
+  }),
+}));
+
+export const mediaRelations = relations(media, ({ one }) => ({
+  uploadedByUser: one(users, {
+    fields: [media.uploadedBy],
+    references: [users.id],
+  }),
+}));
