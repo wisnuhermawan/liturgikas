@@ -1,3 +1,6 @@
+'use client';
+
+import Link from 'next/link';
 import { Button, Card, Col, Row, Space, Typography } from 'antd';
 import { BookOutlined, ReadOutlined, HeartOutlined, CalendarOutlined } from '@ant-design/icons';
 
@@ -23,12 +26,16 @@ export default function HomePage() {
           Katolik lainnya
         </Paragraph>
         <Space size="large" style={{ marginTop: 32 }}>
-          <Button type="primary" size="large" ghost>
-            Jelajahi Sekarang
-          </Button>
-          <Button size="large" style={{ background: 'white', color: '#667eea' }}>
-            Tentang Kami
-          </Button>
+          <Link href="/alkitab">
+            <Button type="primary" size="large" ghost>
+              Jelajahi Sekarang
+            </Button>
+          </Link>
+          <Link href="/alkitab/cari">
+            <Button size="large" style={{ background: 'white', color: '#667eea' }}>
+              Cari Ayat
+            </Button>
+          </Link>
         </Space>
       </div>
 
@@ -40,18 +47,20 @@ export default function HomePage() {
 
         <Row gutter={[24, 24]}>
           <Col xs={24} sm={12} lg={6}>
-            <Card
-              hoverable
-              style={{ textAlign: 'center', height: '100%' }}
-              cover={
-                <div style={{ padding: '40px 0', background: '#f6ffed' }}>
-                  <BookOutlined style={{ fontSize: 48, color: '#52c41a' }} />
-                </div>
-              }
-            >
-              <Title level={4}>Alkitab</Title>
-              <Paragraph>73 kitab lengkap dengan terjemahan Indonesia dan fitur pencarian</Paragraph>
-            </Card>
+            <Link href="/alkitab">
+              <Card
+                hoverable
+                style={{ textAlign: 'center', height: '100%' }}
+                cover={
+                  <div style={{ padding: '40px 0', background: '#f6ffed' }}>
+                    <BookOutlined style={{ fontSize: 48, color: '#52c41a' }} />
+                  </div>
+                }
+              >
+                <Title level={4}>Alkitab</Title>
+                <Paragraph>73 kitab lengkap dengan terjemahan Indonesia dan fitur pencarian</Paragraph>
+              </Card>
+            </Link>
           </Col>
 
           <Col xs={24} sm={12} lg={6}>
