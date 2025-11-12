@@ -1,4 +1,5 @@
 import { integer, pgTable, serial, text, timestamp, varchar, index } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { bibleTestamentEnum } from './enums';
 
 export const bibleBooks = pgTable(
@@ -81,3 +82,50 @@ export const bibleCrossReferences = pgTable('bible_cross_references', {
     .references(() => bibleVerses.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
+
+// Relations
+export const bibleBooksRelations = relations(bibleBooks, ({ many }) => ({
+  chapters: many(bibleChapters),
+}));
+
+export const bibleChaptersRelations = relations(bibleChapters, ({ one, many }) => ({
+  book: one(bibleBooks, {
+    fields: [bibleChapters.bookId],
+    references: [bibleBooks.id],
+  }),
+  verses: many(bibleVerses),
+}));
+
+export const bibleVersesRelations = relations(bibleVerses, ({ one, many }) => ({
+  chapter: one(bibleChapters, {
+    fields: [bibleVerses.chapterId],
+    references: [bibleChapters.id],
+  }),
+  footnotes: many(bibleFootnotes),
+  crossReferencesFrom: many(bibleCrossReferences, {
+    relationName: 'from_verse',
+  }),
+  crossReferencesTo: many(bibleCrossReferences, {
+    relationName: 'to_verse',
+  }),
+}));
+
+export const bibleFootnotesRelations = relations(bibleFootnotes, ({ one }) => ({
+  verse: one(bibleVerses, {
+    fields: [bibleFootnotes.verseId],
+    references: [bibleVerses.id],
+  }),
+}));
+
+export const bibleCrossReferencesRelations = relations(bibleCrossReferences, ({ one }) => ({
+  fromVerse: one(bibleVerses, {
+    fields: [bibleCrossReferences.fromVerseId],
+    references: [bibleVerses.id],
+    relationName: 'from_verse',
+  }),
+  toVerse: one(bibleVerses, {
+    fields: [bibleCrossReferences.toVerseId],
+    references: [bibleVerses.id],
+    relationName: 'to_verse',
+  }),
+}));

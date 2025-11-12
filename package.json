@@ -18,11 +18,18 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "clean": "turbo clean && rm -rf node_modules",
     "typecheck": "turbo typecheck",
-    "test": "turbo test"
+    "test": "turbo test",
+    "seed": "tsx scripts/seeds/index.ts",
+    "seed:admin": "tsx scripts/seeds/01-admin-user.ts",
+    "seed:categories": "tsx scripts/seeds/02-categories.ts",
+    "seed:settings": "tsx scripts/seeds/03-settings.ts",
+    "seed:bible-books": "tsx scripts/seeds/04-bible-books.ts",
+    "import:bible": "tsx scripts/import/bible-importer.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "prettier": "^3.3.3",
+    "tsx": "^4.20.6",
     "turbo": "^2.2.3",
     "typescript": "^5.6.3"
   },

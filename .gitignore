@@ -42,3 +42,9 @@ pnpm-debug.log*
 # Logs
 logs/
 *.log
+
+# Test files
+scripts/import/test-response.html
+
+# Drizzle
+drizzle/meta/
